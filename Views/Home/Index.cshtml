@@ -1,0 +1,285 @@
+﻿@using Syncfusion.EJ2
+@using Syncfusion.EJ2.Popups
+@{
+    ViewBag.Title = "Home Page";
+}
+
+<div style="display:flex; gap:20px; width:100%; height:calc(100vh - 90px);">
+
+    <!-- DOCX Editor -->
+    <div style="flex: 0 0 80%; min-width:0;">
+
+        <div style="height:100%;">
+
+            @(Html.EJS().DocumentEditorContainer("container")
+                .Height("100%")
+                .EnableToolbar(true)
+                .ToolbarMode(Syncfusion.EJ2.DocumentEditor.ToolbarMode.Ribbon)
+                .Created("onDocCreate")
+                .Render())
+
+        </div>
+
+    </div>
+
+    <!-- Workflow Panel -->
+    <div style="flex: 0 0 20%; min-width:0px;">
+
+        <div class="workflow-panel">
+
+            <div class="workflow-header">
+                Approval Workflow
+            </div>
+
+            <div class="workflow-group">
+                <label>Current User</label>
+
+                <select id="CurrentUser" class="workflow-select">
+                    <option value="LoanOfficer" data-name="Andy Bernard">
+                        Andy Bernard - Loan Officer
+                    </option>
+
+                    <option value="RelationshipManager" data-name="Andrew Fuller">
+                        Andrew Fuller - Relationship Manager
+                    </option>
+
+                    <option value="ComplianceOfficer" data-name="Stanley Hudson">
+                        Stanley Hudson - Compliance Officer
+                    </option>
+
+                    <option value="RiskOfficer" data-name="Margaret Peacock">
+                        Margaret Peacock - Risk Officer
+                    </option>
+
+                    <option value="BranchManager" data-name="Steven Buchanan">
+                        Steven Buchanan - Branch Manager
+                    </option>
+                </select>
+            </div>
+
+            <hr class="workflow-divider" />
+
+            <div class="workflow-buttons">
+
+                <button id="btnSave"
+                        class="e-btn btn-primary-action">
+                    Save
+                </button>
+
+                <button id="btnCompare"
+                        class="e-btn btn-secondary-action">
+                    Compare Documents
+                </button>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+@(Html.EJS().Dialog("compareDialog")
+    .IsModal(true)
+    .Width("95%")
+    .Height("95%")
+    .Visible(false)
+    .ShowCloseIcon(true)
+    .Header("Compare Documents")
+    .ContentTemplate(
+    @<div>
+
+        <div id="compare_titlebar" class="e-de-ctn-title">
+            Compare Documents
+        </div>
+
+        <div style="height: calc(100vh - 180px);">
+
+            @(Html.EJS().DocumentEditorContainer("compare")
+                .Height("100%")
+                .EnableToolbar(true)
+                .ToolbarMode(Syncfusion.EJ2.DocumentEditor.ToolbarMode.Ribbon)
+                .Render())
+
+        </div>
+
+    </div>)
+    .Render()
+)
+
+<style>
+    .workflow-panel {
+        width: 100%;
+        box-sizing: border-box;
+        overflow-x: hidden;
+        padding: 12px;
+    }
+
+    .workflow-header {
+        font-size: 20px;
+        font-weight: 600;
+        margin-bottom: 16px;
+    }
+
+    .workflow-group {
+        margin-bottom: 18px;
+    }
+
+        .workflow-group label {
+            display: block;
+            margin-bottom: 6px;
+            font-weight: 500;
+        }
+
+    .workflow-select {
+        width: 100%;
+        max-width: 100%;
+        box-sizing: border-box;
+        height: 38px;
+        padding: 4px 8px;
+    }
+
+    .workflow-buttons {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+    }
+
+    .workflow-buttons .e-btn {
+        width: 100%;
+        box-sizing: border-box;
+        height: 42px;
+        border-radius: 8px;
+        margin: 0;
+    }
+    .btn-primary-action {
+        background: #635bff !important;
+        border-color: #635bff !important;
+        color: #fff !important;
+    }
+
+    .btn-primary-action:hover:not(:disabled) {
+        background: #5248e6 !important;
+        border-color: #5248e6 !important;
+    }
+    .workflow-divider {
+        border: 0;
+        border-top: 2px solid #635bff;
+        opacity: 0.35;
+        margin: 18px 0;
+    }
+</style>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+
+        document.getElementById('CurrentUser')
+            .addEventListener('change', onUserChanged);
+
+        document.getElementById('btnSave')
+            .addEventListener('click', saveDocument);
+
+
+        document.getElementById('btnCompare')
+            .addEventListener('click', compareVersions);
+
+    });
+
+    function onUserChanged() {
+
+        let role =
+            document.getElementById('CurrentUser').value;
+
+        var userName = document.getElementById("CurrentUser").selectedOptions[0].getAttribute("data-name");
+        var container = document.getElementById("container").ej2_instances[0];
+        container.documentEditor.currentUser = userName;
+        if (role === "RiskOfficer") {
+            container.documentEditor.editor.enforceProtection('123', 'RevisionsOnly');
+        } else if (role === "ComplianceOfficer") {
+            container.documentEditor.editor.enforceProtection('123', 'CommentsOnly');
+        } else if (role === "BranchManager") {
+            container.documentEditor.editor.stopProtection('123');
+            container.documentEditor.enableTrackChanges = false;
+        } else {
+            container.documentEditor.editor.enforceProtection('123',false,true);
+        }
+    }
+    ej.documenteditor.DocumentEditorContainer.Inject(ej.documenteditor.Toolbar, ej.documenteditor.Ribbon);
+    function onDocCreate() {
+        var container = document.getElementById("container").ej2_instances[0];
+        container.documentEditor.documentEditorSettings.highlightEditableRanges = true;
+        container.serviceUrl = window.baseUrl+"api/documenteditor/";
+        fetch(window.baseUrl+'api/documenteditor/LoadDocument')
+            .then(response => response.text())
+            .then(data => {
+                container.documentEditor.open(data);
+                onUserChanged();
+            });
+    }
+    function exportServerSide() {
+        var container = document.getElementById("container").ej2_instances[0];
+        let http = new XMLHttpRequest();
+        // Replace your running web service Url here
+        http.open('POST', window.baseUrl+'api/documenteditor/ExportPdf');
+        http.setRequestHeader('Content-Type', 'application/json;charset=UTF-8');
+        http.responseType = 'json';
+        //Serialize document content as SFDT.
+        let sfdt = { content: container.documentEditor.serialize() };
+        //Send the sfdt content to server side.
+        http.send(JSON.stringify(sfdt));
+    }
+    async function compareVersions() {
+
+        var container =
+            document.getElementById("container").ej2_instances[0];
+
+        var sfdt = container.documentEditor.serialize();
+        var userName = document.getElementById("CurrentUser").selectedOptions[0].getAttribute("data-name");
+        const response = await fetch(
+            window.baseUrl+"api/documenteditor/CompareDocument",
+            {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                    content: sfdt,
+                    author: userName
+                })
+            });
+
+        const compareResult = await response.json();
+
+        var dialog =
+            document.getElementById("compareDialog").ej2_instances[0];
+
+        dialog.show();
+
+        var compareEditor =
+            document.getElementById("compare").ej2_instances[0];
+
+        compareEditor.documentEditor.open(compareResult);
+        compareEditor.documentEditor.isReadOnly = true;
+    }
+    function saveDocument() {
+
+        var container =
+            document.getElementById("container").ej2_instances[0];
+
+        var sfdt = container.documentEditor.serialize();
+
+        var documentName =
+            container.documentEditor.documentName;
+
+        fetch(window.baseUrl+'api/documenteditor/SaveDocument', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                fileName: documentName,
+                content: sfdt
+            })
+        });
+    }
+</script>
