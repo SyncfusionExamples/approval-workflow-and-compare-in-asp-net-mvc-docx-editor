@@ -17,7 +17,7 @@ namespace DocumentEditorSample
         {
             GlobalConfiguration.Configure(WebApiConfig.Register);
             AreaRegistration.RegisterAllAreas();
-            Syncfusion.Licensing.SyncfusionLicenseProvider.RegisterLicense("NxYtGyMROh0gHDMgDk1jWU9FaFxFVmFJfFVrRGNEfF5gdVBMYVlbRXFUQF1hT35adUViXH5bc3dVRmBaWkdz");
+            Syncfusion.Licensing.SyncfusionLicenseProvider.RegisterLicense("Your Syncfusion Key");
             FilterConfig.RegisterGlobalFilters(GlobalFilters.Filters);
             RouteConfig.RegisterRoutes(RouteTable.Routes);
             
